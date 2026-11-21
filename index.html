@@ -89,9 +89,9 @@
 </head>
 <body class="text-slate-800 antialiased min-h-screen flex flex-col">
 
-    <!-- Top Navigation Header -->
-    <header class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-40 px-4 py-3 shadow-sm">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <!-- Top Navigation Header (Unfixed / Natural scroll) -->
+    <header class="bg-white border-b border-slate-200 px-4 py-3 shadow-sm">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md shadow-purple-200">
                     <i class="fa-solid font-bold fa-timeline text-lg"></i>
@@ -104,43 +104,45 @@
                     <p class="text-xs text-slate-500">ハマった作品・推し歴史をかわいく可視化！</p>
                 </div>
             </div>
-
-            <div class="flex flex-wrap items-center gap-2">
-                <button id="share-url-btn" onclick="shareTimelineURL()" class="bg-white hover:bg-slate-50 text-slate-700 font-bold px-3.5 py-2 rounded-xl text-sm border border-slate-200 shadow-sm transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-share-nodes text-purple-600"></i>
-                    <span>URLで結果を共有</span>
-                </button>
-                <button id="export-btn" onclick="exportImage()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md shadow-purple-200 transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-download"></i>
-                    画像として保存 (.PNG)
-                </button>
-            </div>
         </div>
     </header>
+
+    <!-- Shared Mode Banner (Only visible when opened via shared URL) -->
+    <div id="shared-view-banner" class="hidden bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-3 px-4 shadow-inner">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm font-medium">
+            <div class="flex items-center gap-2">
+                <span class="bg-white/20 px-2 py-0.5 rounded-full text-xs font-bold">共有プレビュー</span>
+                <span>共有されたオタク年表を表示中！</span>
+            </div>
+            <button onclick="switchToEditMode()" class="bg-white text-purple-700 hover:bg-purple-50 font-bold px-4 py-1.5 rounded-xl text-xs shadow transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-pen-to-square"></i>
+                <span>自分も年表をつくる・編集する</span>
+            </button>
+        </div>
+    </div>
 
     <!-- Main Workspace -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         <!-- Controls & Editor Section (Left Sidebar) -->
-        <section class="lg:col-span-4 flex flex-col gap-5">
-            
-            <!-- Global Config Card -->
+        <section id="editor-sidebar" class="lg:col-span-4 flex flex-col gap-5">
+            <!-- Timeline General Settings Card -->
             <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
                 <h2 class="font-bold text-slate-800 text-base flex items-center gap-2 border-b border-slate-100 pb-2">
                     <i class="fa-solid fa-sliders text-purple-500"></i>
-                    年表の基本設定
+                    基本設定
                 </h2>
 
-                <!-- Title Input -->
+                <!-- Timeline Title Input -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1">年表タイトル</label>
-                    <input type="text" id="timeline-title-input" value="わたしのオタク年表" oninput="updateConfig()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 font-bold">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">年表のタイトル</label>
+                    <input type="text" id="timeline-title-input" oninput="updateConfig()" value="わたしのオタク年表" placeholder="例: ○○のオタク年表" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all font-bold">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <!-- Birth Year -->
+                    <!-- Birth Year Selector -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">生まれ年 (生年)</label>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">生まれ年</label>
                         <select id="birth-year-select" onchange="updateConfig()" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500">
                             <!-- Options generated dynamically -->
                         </select>
@@ -255,7 +257,7 @@
         </section>
 
         <!-- Timeline Preview Canvas Section (Right Main Canvas) -->
-        <section class="lg:col-span-8 flex flex-col gap-4">
+        <section id="preview-section" class="lg:col-span-8 flex flex-col gap-4">
 
             <div class="flex items-center justify-between px-1">
                 <h2 class="font-bold text-slate-800 text-lg flex items-center gap-2">
@@ -302,13 +304,40 @@
                         </div>
                     </div>
 
+                    <!-- Registered Content & Memos Display (Appears in Shared View & Export) -->
+                    <div id="shared-memo-list-section" class="mt-6 pt-5 border-t border-slate-200/50">
+                        <h3 class="font-bold text-sm text-slate-700 mb-3 flex items-center gap-1.5">
+                            <i class="fa-solid fa-bookmark text-purple-500 text-xs"></i>
+                            履修コンテンツ＆推しメモ一覧
+                        </h3>
+                        <div id="shared-memo-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
                     <!-- Canvas Footer Tag (Fixed outside horizontal scroll) -->
-                    <div class="mt-4 pt-3 border-t border-slate-200/40 flex items-center justify-between text-[11px] text-slate-400">
+                    <div class="mt-5 pt-3 border-t border-slate-200/40 flex items-center justify-between text-[11px] text-slate-400">
                         <span>Generated by わたしのオタク年表</span>
                         <span id="canvas-footer-date"></span>
                     </div>
 
                 </div>
+            </div>
+
+            <!-- Action Buttons (Placed right below the Timeline Preview Card) -->
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-center md:justify-end gap-3">
+                <button id="share-twitter-btn" onclick="shareToTwitter()" class="flex-1 sm:flex-none bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-sm transition-all flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-x-twitter text-base"></i>
+                    <span>Xでシェア</span>
+                </button>
+                <button id="share-url-btn" onclick="shareTimelineURL()" class="flex-1 sm:flex-none bg-white hover:bg-slate-50 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-sm border border-slate-200 shadow-sm transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-share-nodes text-purple-600"></i>
+                    <span>URLで共有</span>
+                </button>
+                <button id="export-btn" onclick="exportImage()" class="w-full sm:w-auto bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-md shadow-purple-200 transition-all flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-download"></i>
+                    <span>画像として保存 (.PNG)</span>
+                </button>
             </div>
 
         </section>
@@ -357,6 +386,7 @@
             scaleMode: 'year', // 'year', 'age'
             selectedTheme: 'pastel-purple',
             selectedColor: '#8a45de',
+            isSharedView: false,
             items: [
                 {
                     id: 'default-1',
@@ -391,6 +421,7 @@
 
         // Save state to LocalStorage
         function saveState() {
+            if (state.isSharedView) return; // Don't overwrite local save in shared view mode
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             } catch (e) {
@@ -400,9 +431,12 @@
 
         // Initialize App
         window.addEventListener('DOMContentLoaded', () => {
-            // Priority 1: Read shared URL hash data if present, otherwise load LocalStorage
-            if (!loadStateFromURL()) {
+            const hasSharedData = loadStateFromURL();
+            if (!hasSharedData) {
                 loadSavedState();
+            } else {
+                state.isSharedView = true;
+                setupSharedViewUI();
             }
             
             // Sync UI inputs with state
@@ -418,17 +452,29 @@
             render();
         });
 
-        // Initialize Birth Year Dropdown in ASCENDING order (1970 -> 2026)
-        function initBirthYearSelect() {
-            const select = document.getElementById('birth-year-select');
-            select.innerHTML = '';
-            for (let y = 1970; y <= CURRENT_YEAR; y++) {
-                const opt = document.createElement('option');
-                opt.value = y;
-                opt.textContent = `${y}年`;
-                if (y === state.birthYear) opt.selected = true;
-                select.appendChild(opt);
-            }
+        // Setup Shared View UI layout
+        function setupSharedViewUI() {
+            document.getElementById('shared-view-banner').classList.remove('hidden');
+            const editorSidebar = document.getElementById('editor-sidebar');
+            const previewSection = document.getElementById('preview-section');
+            
+            // Hide edit form sidebar in shared view by default and make timeline full width
+            editorSidebar.classList.add('hidden');
+            previewSection.classList.remove('lg:col-span-8');
+            previewSection.classList.add('lg:col-span-12');
+        }
+
+        // Switch from Shared View to Editing Mode
+        function switchToEditMode() {
+            state.isSharedView = false;
+            document.getElementById('shared-view-banner').classList.add('hidden');
+            const editorSidebar = document.getElementById('editor-sidebar');
+            const previewSection = document.getElementById('preview-section');
+            
+            editorSidebar.classList.remove('hidden');
+            previewSection.classList.remove('lg:col-span-12');
+            previewSection.classList.add('lg:col-span-8');
+            render();
         }
 
         // Load state from URL hash if available (for shared links)
@@ -454,22 +500,95 @@
             return false;
         }
 
+        // Generate Short URL via TinyURL API for smooth Twitter sharing
+        async function getShortenedURL(longUrl) {
+            try {
+                const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+                if (res.ok) {
+                    const shortUrl = await res.text();
+                    return shortUrl.trim();
+                }
+            } catch (e) {
+                console.warn('TinyURL shortening failed, using original long URL:', e);
+            }
+            return longUrl;
+        }
+
+        // Generate Shareable URL
+        function generateShareURL() {
+            const copyState = {
+                title: state.title,
+                birthYear: state.birthYear,
+                scaleMode: state.scaleMode,
+                selectedTheme: state.selectedTheme,
+                selectedColor: state.selectedColor,
+                items: state.items
+            };
+            const jsonStr = JSON.stringify(copyState);
+            const encoded = btoa(encodeURIComponent(jsonStr));
+            return `${window.location.origin}${window.location.pathname}#${encoded}`;
+        }
+
+        // Share to Twitter/X with URL shortening
+        async function shareToTwitter() {
+            const btn = document.getElementById('share-twitter-btn');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>URL短縮中...</span>`;
+
+            try {
+                const fullShareUrl = generateShareURL();
+                const shortUrl = await getShortenedURL(fullShareUrl);
+                
+                const tweetText = `【${state.title}】を作成しました！✨\n履修コンテンツや推しメモをチェックしてみてね！\n#オタク年表 #推し事年表\n`;
+                const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shortUrl)}`;
+                
+                window.open(twitterUrl, '_blank');
+            } catch (e) {
+                console.error('Twitter share error:', e);
+                alert('ツイートの作成に失敗しました。');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }
+
         // Generate and Copy Shareable URL containing full data
         async function shareTimelineURL() {
+            const btn = document.getElementById('share-url-btn');
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>短縮中...</span>`;
+
             try {
-                const jsonStr = JSON.stringify(state);
-                const encoded = btoa(encodeURIComponent(jsonStr));
-                const shareUrl = `${window.location.origin}${window.location.pathname}#${encoded}`;
+                const fullShareUrl = generateShareURL();
+                const shortUrl = await getShortenedURL(fullShareUrl);
 
                 if (navigator.clipboard && navigator.clipboard.writeText) {
-                    await navigator.clipboard.writeText(shareUrl);
-                    alert('共有用URLをクリップボードにコピーしました！\nこのURLを送ると推しメモ（補足）入りの年表がそのまま相手の画面で再現されます！');
+                    await navigator.clipboard.writeText(shortUrl);
+                    alert('短縮共有URLをクリップボードにコピーしました！\nこのURLを送ると推しメモ（補足）入りの綺麗にまとめられた年表がそのまま閲覧できます！');
                 } else {
-                    prompt('以下のURLをコピーして共有してください：', shareUrl);
+                    prompt('以下のURLをコピーして共有してください：', shortUrl);
                 }
             } catch (e) {
                 console.error('Share URL Error:', e);
                 alert('URLの作成に失敗しました。');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }
+
+        // Initialize Birth Year Dropdown in ASCENDING order (1970 -> 2026)
+        function initBirthYearSelect() {
+            const select = document.getElementById('birth-year-select');
+            select.innerHTML = '';
+            for (let y = 1970; y <= CURRENT_YEAR; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = `${y}年`;
+                if (y === state.birthYear) opt.selected = true;
+                select.appendChild(opt);
             }
         }
 
@@ -653,6 +772,7 @@
 
         // Edit Item Action
         function editItem(id) {
+            if (state.isSharedView) return;
             const item = state.items.find(i => i.id === id);
             if (!item) return;
 
@@ -732,6 +852,7 @@
 
             applyTheme();
             renderItemsList();
+            renderSharedMemoGrid();
             renderCanvasGrid();
             saveState(); // Automatically persist to LocalStorage
         }
@@ -784,6 +905,45 @@
                     </div>
                 `;
                 listEl.appendChild(card);
+            });
+        }
+
+        // Render Shared Memo List Grid on Canvas
+        function renderSharedMemoGrid() {
+            const gridEl = document.getElementById('shared-memo-cards-grid');
+            gridEl.innerHTML = '';
+
+            const validItems = state.items.filter(i => i.id !== 'default-1' || i.memo);
+            const itemsToDisplay = validItems.length > 0 ? validItems : state.items;
+
+            if (itemsToDisplay.length === 0) {
+                document.getElementById('shared-memo-list-section').classList.add('hidden');
+                return;
+            }
+            document.getElementById('shared-memo-list-section').classList.remove('hidden');
+
+            itemsToDisplay.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'p-3 bg-white/60 backdrop-blur-sm rounded-xl border border-slate-200/60 shadow-sm flex flex-col justify-between gap-1';
+                
+                const endText = item.endYear === CURRENT_YEAR ? '現在' : `${item.endYear}年`;
+                const startAge = item.startYear - state.birthYear;
+                const endAge = item.endYear - state.birthYear;
+                const ageSpan = item.endYear === CURRENT_YEAR ? `${startAge}歳〜現在` : `${startAge}〜${endAge}歳`;
+
+                const paletteObj = COLOR_PALETTE.find(c => c.hex.toLowerCase() === item.color.toLowerCase()) || { text: '#ffffff' };
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${item.color}"></span>
+                            <span class="font-extrabold text-slate-800 truncate">${escapeHtml(item.title)}</span>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-400 bg-slate-100/80 px-2 py-0.5 rounded-full flex-shrink-0">${item.startYear}〜${endText} (${ageSpan})</span>
+                    </div>
+                    ${item.memo ? `<p class="text-[11px] text-slate-600 pl-4 border-l-2 border-purple-300/80 mt-1 italic">${escapeHtml(item.memo)}</p>` : ''}
+                `;
+                gridEl.appendChild(card);
             });
         }
 
