@@ -107,6 +107,10 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
+                <button id="share-url-btn" onclick="shareTimelineURL()" class="bg-white hover:bg-slate-50 text-slate-700 font-bold px-3.5 py-2 rounded-xl text-sm border border-slate-200 shadow-sm transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-share-nodes text-purple-600"></i>
+                    <span>URLで結果を共有</span>
+                </button>
                 <button id="export-btn" onclick="exportImage()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold px-4 py-2 rounded-xl text-sm shadow-md shadow-purple-200 transition-all flex items-center gap-2">
                     <i class="fa-solid fa-download"></i>
                     画像として保存 (.PNG)
@@ -209,7 +213,7 @@
                         </div>
                     </div>
 
-                    <!-- Ongoing Checkbox (Restored!) -->
+                    <!-- Ongoing Checkbox -->
                     <div class="flex items-center gap-2 pt-0.5">
                         <input type="checkbox" id="item-is-ongoing" onchange="toggleOngoing(this.checked)" class="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500 cursor-pointer">
                         <label for="item-is-ongoing" class="text-xs font-bold text-slate-700 cursor-pointer select-none flex items-center gap-1">
@@ -347,7 +351,7 @@
         const CURRENT_YEAR = 2026;
         const STORAGE_KEY = 'otaku_timeline_data_v1';
 
-        // Application State (Restored Default Item: 自分)
+        // Application State (Default Item: 自分)
         let state = {
             title: 'わたしのオタク年表',
             birthYear: 2000,
@@ -366,14 +370,13 @@
             ]
         };
 
-        // Load saved state from LocalStorage if available
+        // Load saved state from LocalStorage
         function loadSavedState() {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (saved) {
                     const parsed = JSON.parse(saved);
                     if (parsed && typeof parsed === 'object') {
-                        // Merge loaded items safely
                         if (Array.isArray(parsed.items)) state.items = parsed.items;
                         if (parsed.title) state.title = parsed.title;
                         if (parsed.birthYear) state.birthYear = parseInt(parsed.birthYear);
@@ -387,7 +390,7 @@
             }
         }
 
-        // Save current state to LocalStorage
+        // Save state to LocalStorage
         function saveState() {
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -398,9 +401,12 @@
 
         // Initialize App
         window.addEventListener('DOMContentLoaded', () => {
-            loadSavedState();
+            // Priority 1: Read shared URL hash data if present, otherwise load LocalStorage
+            if (!loadStateFromURL()) {
+                loadSavedState();
+            }
             
-            // Sync UI inputs with loaded state
+            // Sync UI inputs with state
             document.getElementById('timeline-title-input').value = state.title;
             document.getElementById('scale-mode-select').value = state.scaleMode;
 
@@ -413,7 +419,7 @@
             render();
         });
 
-        // Initialize Birth Year Options (1970 - CURRENT_YEAR)
+        // Initialize Birth Year Dropdown in ASCENDING order (1970 -> 2026)
         function initBirthYearSelect() {
             const select = document.getElementById('birth-year-select');
             select.innerHTML = '';
@@ -426,7 +432,49 @@
             }
         }
 
-        // Initialize Export Theme Selector Buttons
+        // Load state from URL hash if available (for shared links)
+        function loadStateFromURL() {
+            try {
+                const hash = window.location.hash.substring(1);
+                if (hash) {
+                    const jsonStr = decodeURIComponent(atob(hash));
+                    const parsed = JSON.parse(jsonStr);
+                    if (parsed && typeof parsed === 'object') {
+                        if (Array.isArray(parsed.items)) state.items = parsed.items;
+                        if (parsed.title) state.title = parsed.title;
+                        if (parsed.birthYear) state.birthYear = parseInt(parsed.birthYear);
+                        if (parsed.scaleMode) state.scaleMode = parsed.scaleMode;
+                        if (parsed.selectedTheme) state.selectedTheme = parsed.selectedTheme;
+                        if (parsed.selectedColor) state.selectedColor = parsed.selectedColor;
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to parse state from URL:', e);
+            }
+            return false;
+        }
+
+        // Generate and Copy Shareable URL containing full data
+        async function shareTimelineURL() {
+            try {
+                const jsonStr = JSON.stringify(state);
+                const encoded = btoa(encodeURIComponent(jsonStr));
+                const shareUrl = `${window.location.origin}${window.location.pathname}#${encoded}`;
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(shareUrl);
+                    alert('共有用URLをクリップボードにコピーしました！\nこのURLを送ると推しメモ（補足）入りの年表がそのまま相手の画面で再現されます！');
+                } else {
+                    prompt('以下のURLをコピーして共有してください：', shareUrl);
+                }
+            } catch (e) {
+                console.error('Share URL Error:', e);
+                alert('URLの作成に失敗しました。');
+            }
+        }
+
+        // Initialize Export Theme Buttons
         function initThemeButtons() {
             const container = document.getElementById('theme-buttons');
             container.innerHTML = '';
@@ -511,7 +559,7 @@
             }
         }
 
-        // Config Changed Event
+        // Config Change Event
         function updateConfig() {
             state.title = document.getElementById('timeline-title-input').value || 'わたしのオタク年表';
             const oldBirth = state.birthYear;
@@ -520,7 +568,6 @@
 
             if (oldBirth !== state.birthYear) {
                 updateYearOptions(true);
-                // Also update default '自分' item if present
                 const selfItem = state.items.find(i => i.id === 'default-1');
                 if (selfItem) {
                     selfItem.startYear = state.birthYear;
@@ -529,7 +576,7 @@
             render();
         }
 
-        // Toggle Ongoing checkbox behavior
+        // Toggle Ongoing Checkbox
         function toggleOngoing(isChecked) {
             const endSelect = document.getElementById('item-end-year');
             if (isChecked) {
@@ -542,7 +589,7 @@
             }
         }
 
-        // Add / Edit Entry Handler
+        // Form Submit Handler
         function handleFormSubmit(e) {
             e.preventDefault();
             const editId = document.getElementById('editing-id').value;
@@ -687,7 +734,7 @@
             applyTheme();
             renderItemsList();
             renderCanvasGrid();
-            saveState(); // Automatically persist to LocalStorage on every update
+            saveState(); // Automatically persist to LocalStorage
         }
 
         // Render Management Sidebar List
@@ -755,7 +802,6 @@
             const trackHeight = 40;
             const headerHeight = 44;
 
-            // Enforce sufficient width so mobile horizontal scroll reaches 2026 smoothly
             const minCellWidth = 54;
             const calculatedWidth = totalYears * minCellWidth;
             container.style.width = `${calculatedWidth}px`;
@@ -765,7 +811,7 @@
             mainGrid.className = 'grid relative w-full select-none';
             mainGrid.style.gridTemplateColumns = `repeat(${totalYears}, minmax(0, 1fr))`;
 
-            // 1. Header Cells (Single unified 4-digit year or age without sublabel)
+            // 1. Header Cells (4-digit year or age without sublabel)
             for (let y = startY; y <= endY; y++) {
                 const cell = document.createElement('div');
                 cell.className = 'px-1 py-1 text-center border-b border-slate-300/50 flex items-center justify-center font-extrabold text-slate-700 bg-white/30 backdrop-blur-sm z-20';
@@ -851,7 +897,7 @@
             });
         }
 
-        // Export Timeline as PNG Image
+        // Export Timeline as PNG Image (Full grid width expansion)
         async function exportImage() {
             const btn = document.getElementById('export-btn');
             const target = document.getElementById('timeline-canvas');
@@ -861,21 +907,18 @@
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>画像生成中...</span>`;
 
-            // Save original scroll styles
             const prevScrollLeft = scrollWrapper ? scrollWrapper.scrollLeft : 0;
             const prevOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
             const prevWidth = target.style.width;
 
             try {
-                // Ensure scroll is at zero before capture
                 if (scrollWrapper) {
                     scrollWrapper.scrollLeft = 0;
                     scrollWrapper.style.overflow = 'visible';
                 }
 
-                // Temporary expand full target to fit grid width completely
                 const fullGridWidth = gridContainer ? gridContainer.scrollWidth : target.scrollWidth;
-                const paddedWidth = fullGridWidth + 64; // account for canvas padding (p-8 = 32px each side)
+                const paddedWidth = fullGridWidth + 64;
                 target.style.width = `${paddedWidth}px`;
 
                 const canvas = await html2canvas(target, {
@@ -897,7 +940,6 @@
                 console.error('Export error:', err);
                 alert('画像の出力中にエラーが発生しました。');
             } finally {
-                // Restore original styles & scroll position
                 target.style.width = prevWidth || '';
                 if (scrollWrapper) {
                     scrollWrapper.style.overflow = prevOverflow || '';
