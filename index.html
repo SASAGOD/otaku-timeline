@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>わたしのオタク年表ジェネレーター</title>
+    
+    <!-- Dynamic OGP & Twitter Card Meta Tags for Link Preview Thumbnail -->
+    <meta property="og:title" id="og-title" content="わたしのオタク年表">
+    <meta property="og:description" id="og-desc" content="オタク年表を作成しました！ハマった作品や推しメモをチェックしてみてね！">
+    <meta property="og:type" content="website">
+    <meta property="og:image" id="og-image" content="https://sasagod.github.io/otaku-timeline/ogp-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" id="tw-title" content="わたしのオタク年表">
+    <meta name="twitter:description" id="tw-desc" content="オタク年表を作成しました！ハマった作品や推しメモをチェックしてみてね！">
+    <meta name="twitter:image" id="tw-image" content="https://sasagod.github.io/otaku-timeline/ogp-image.png">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts -->
@@ -526,21 +537,28 @@
             };
             const jsonStr = JSON.stringify(copyState);
             const encoded = btoa(encodeURIComponent(jsonStr));
-            return `${window.location.origin}${window.location.pathname}#${encoded}`;
+            const baseUrl = window.location.origin + window.location.pathname;
+            return `${baseUrl}#${encoded}`;
         }
 
-        // Share to Twitter/X with URL shortening
+        // Share to Twitter/X with dynamic post text & summary
         async function shareToTwitter() {
             const btn = document.getElementById('share-twitter-btn');
             const originalHTML = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>URL短縮中...</span>`;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>共有準備中...</span>`;
 
             try {
                 const fullShareUrl = generateShareURL();
                 const shortUrl = await getShortenedURL(fullShareUrl);
                 
-                const tweetText = `【${state.title}】を作成しました！✨\n履修コンテンツや推しメモをチェックしてみてね！\n#オタク年表 #推し事年表\n`;
+                // Dynamic post text with Title, Birth Year, and registered works summary
+                const validItems = state.items.filter(i => i.id !== 'default-1');
+                const sampleNames = validItems.slice(0, 4).map(i => `「${i.title}」`).join(' ');
+                const extraCount = validItems.length > 4 ? ` ほか${validItems.length - 4}作品` : '';
+                const itemSummaryText = sampleNames ? `\n📌 履修・推し: ${sampleNames}${extraCount}` : '';
+
+                const tweetText = `【${state.title}】(${state.birthYear}年〜)\nオタク年表を作成しました！✨${itemSummaryText}\n\n👇 年表と推しメモを見る\n#オタク年表 #履修年表`;
                 const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shortUrl)}`;
                 
                 window.open(twitterUrl, '_blank');
