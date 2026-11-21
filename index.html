@@ -569,13 +569,12 @@
                 const fullShareUrl = generateShareURL();
                 const shortUrl = await getShortenedURL(fullShareUrl);
 
-                // Formatted post structure:
-                // <年表名>を作成しました！
+                // Formatted post structure:【<年表名>】を作成しました！
                 // 
                 // あなたの履修歴は？年表でチェック！
                 // #オタク年表ジェネレータ
                 // <リンク>
-                const tweetText = `${state.title}を作成しました！\n\nあなたの履修歴は？年表でチェック！\n#オタク年表ジェネレータ`;
+                const tweetText = `【${state.title}】を作成しました！\n\nあなたの履修歴は？年表でチェック！\n#オタク年表ジェネレータ`;
                 const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shortUrl)}`;
                 
                 window.open(twitterUrl, '_blank');
