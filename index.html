@@ -91,10 +91,17 @@
         .timeline-bar {
             box-shadow: 0 2px 8px -1px rgba(0, 0, 0, 0.12), 0 1px 4px -1px rgba(0, 0, 0, 0.07);
             transition: all 0.2s ease;
+            line-height: 1.2;
         }
         .timeline-bar:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px -1px rgba(0, 0, 0, 0.18);
+        }
+        .timeline-bar-title {
+            line-height: 1.2;
+            display: inline-block;
+            word-break: keep-all;
+            white-space: nowrap;
         }
     </style>
 </head>
@@ -368,7 +375,7 @@
             { id: 'yellow', name: '黄色', hex: '#ffdb4a', text: '#334155' },
             { id: 'lime', name: '黄緑', hex: '#85d63e', text: '#ffffff' },
             { id: 'green', name: '緑', hex: '#2f9e3a', text: '#ffffff' },
-            { id: 'cyan', name: '水色', hex: '#77cdf2', text: '#334155' },
+            { id: 'cyan', name: '水色', hex: '#77cdf2', text: '#ffffff' },
             { id: 'blue', name: '青', hex: '#4b5fd1', text: '#ffffff' },
             { id: 'purple', name: '紫', hex: '#8a45de', text: '#ffffff' },
             { id: 'pink', name: 'ピンク', hex: '#f573cc', text: '#ffffff' },
@@ -562,12 +569,13 @@
                 const fullShareUrl = generateShareURL();
                 const shortUrl = await getShortenedURL(fullShareUrl);
 
-                // Formatted post structure:【<年表名>】を作成しました！
+                // Formatted post structure:
+                // <年表名>を作成しました！
                 // 
                 // あなたの履修歴は？年表でチェック！
                 // #オタク年表ジェネレータ
                 // <リンク>
-                const tweetText = `【${state.title}】を作成しました！\n\nあなたの履修歴は？年表でチェック！\n#オタク年表ジェネレータ`;
+                const tweetText = `${state.title}を作成しました！\n\nあなたの履修歴は？年表でチェック！\n#オタク年表ジェネレータ`;
                 const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shortUrl)}`;
                 
                 window.open(twitterUrl, '_blank');
@@ -1052,7 +1060,7 @@
                 const isOngoing = item.endYear === CURRENT_YEAR;
                 
                 bar.innerHTML = `
-                    <span class="truncate font-extrabold flex items-center gap-1">
+                    <span class="truncate font-extrabold flex items-center gap-1 timeline-bar-title">
                         <span>${escapeHtml(item.title)}</span>
                     </span>
                     ${isOngoing ? '<span class="text-[10px] flex-shrink-0 bg-white/20 backdrop-blur-sm px-1.5 py-0.5 rounded-full ml-1">🔥 現在</span>' : ''}
@@ -1079,7 +1087,7 @@
             });
         }
 
-        // Export Timeline as PNG Image (Full grid width expansion)
+        // Export Timeline as PNG Image (Full grid width expansion & font rendering fix)
         async function exportImage() {
             const btn = document.getElementById('export-btn');
             const target = document.getElementById('timeline-canvas');
@@ -1094,6 +1102,11 @@
             const prevWidth = target.style.width;
 
             try {
+                // Ensure fonts are loaded before capture
+                if (document.fonts && document.fonts.ready) {
+                    await document.fonts.ready;
+                }
+
                 if (scrollWrapper) {
                     scrollWrapper.scrollLeft = 0;
                     scrollWrapper.style.overflow = 'visible';
@@ -1111,7 +1124,13 @@
                     scrollX: 0,
                     scrollY: 0,
                     width: paddedWidth,
-                    windowWidth: paddedWidth + 100
+                    windowWidth: paddedWidth + 100,
+                    onclone: (clonedDoc) => {
+                        const clonedTarget = clonedDoc.getElementById('timeline-canvas');
+                        if (clonedTarget) {
+                            clonedTarget.style.fontFamily = '"M PLUS Rounded 1c", sans-serif';
+                        }
+                    }
                 });
 
                 const link = document.createElement('a');
