@@ -7,12 +7,12 @@
     
     <!-- Dynamic OGP & Twitter Card Meta Tags for Link Preview Thumbnail -->
     <meta property="og:title" id="og-title" content="わたしのオタク年表">
-    <meta property="og:description" id="og-desc" content="オタク年表を作成しました！ハマった作品や推しメモをチェックしてみてね！">
+    <meta property="og:description" id="og-desc" content="オタク年表を作成しました！あなたの履修歴は？年表でチェック！">
     <meta property="og:type" content="website">
     <meta property="og:image" id="og-image" content="https://sasagod.github.io/otaku-timeline/ogp-image.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" id="tw-title" content="わたしのオタク年表">
-    <meta name="twitter:description" id="tw-desc" content="オタク年表を作成しました！ハマった作品や推しメモをチェックしてみてね！">
+    <meta name="twitter:description" id="tw-desc" content="オタク年表を作成しました！あなたの履修歴は？年表でチェック！">
     <meta name="twitter:image" id="tw-image" content="https://sasagod.github.io/otaku-timeline/ogp-image.png">
 
     <!-- Tailwind CSS -->
@@ -71,6 +71,17 @@
             background: rgba(100, 116, 139, 0.7);
         }
 
+        /* Fix html2canvas font vertical shift / clipping bug */
+        .exporting-canvas * {
+            line-height: normal !important;
+            letter-spacing: normal !important;
+        }
+        .exporting-canvas .timeline-bar-text {
+            display: inline-block !important;
+            padding-top: 2px !important;
+            line-height: 1.2 !important;
+        }
+
         /* Color preview selection active ring */
         .color-dot.selected {
             transform: scale(1.2);
@@ -91,17 +102,10 @@
         .timeline-bar {
             box-shadow: 0 2px 8px -1px rgba(0, 0, 0, 0.12), 0 1px 4px -1px rgba(0, 0, 0, 0.07);
             transition: all 0.2s ease;
-            line-height: 1.2;
         }
         .timeline-bar:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px -1px rgba(0, 0, 0, 0.18);
-        }
-        .timeline-bar-title {
-            line-height: 1.2;
-            display: inline-block;
-            word-break: keep-all;
-            white-space: nowrap;
         }
     </style>
 </head>
@@ -342,7 +346,7 @@
                 </div>
             </div>
 
-            <!-- Action Buttons (Hidden when in Shared View mode) -->
+            <!-- Action Buttons Area (Hidden in Shared View Mode) -->
             <div id="action-buttons-area" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-center md:justify-end gap-3">
                 <button id="share-twitter-btn" onclick="shareToTwitter()" class="flex-1 sm:flex-none bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-sm transition-all flex items-center justify-center gap-2">
                     <i class="fa-brands fa-x-twitter text-base"></i>
@@ -476,15 +480,13 @@
             const editorSidebar = document.getElementById('editor-sidebar');
             const previewSection = document.getElementById('preview-section');
             const actionButtonsArea = document.getElementById('action-buttons-area');
-            
-            // Hide edit form sidebar and creator action buttons in shared view by default
-            if (editorSidebar) editorSidebar.classList.add('hidden');
-            if (actionButtonsArea) actionButtonsArea.classList.add('hidden');
 
-            if (previewSection) {
-                previewSection.classList.remove('lg:col-span-8');
-                previewSection.classList.add('lg:col-span-12');
-            }
+            // Hide edit form sidebar and creator action buttons in shared view
+            editorSidebar.classList.add('hidden');
+            if (actionButtonsArea) actionButtonsArea.classList.add('hidden');
+            
+            previewSection.classList.remove('lg:col-span-8');
+            previewSection.classList.add('lg:col-span-12');
         }
 
         // Switch from Shared View to Editing Mode
@@ -494,14 +496,12 @@
             const editorSidebar = document.getElementById('editor-sidebar');
             const previewSection = document.getElementById('preview-section');
             const actionButtonsArea = document.getElementById('action-buttons-area');
-            
-            if (editorSidebar) editorSidebar.classList.remove('hidden');
-            if (actionButtonsArea) actionButtonsArea.classList.remove('hidden');
 
-            if (previewSection) {
-                previewSection.classList.remove('lg:col-span-12');
-                previewSection.classList.add('lg:col-span-8');
-            }
+            editorSidebar.classList.remove('hidden');
+            if (actionButtonsArea) actionButtonsArea.classList.remove('hidden');
+            
+            previewSection.classList.remove('lg:col-span-12');
+            previewSection.classList.add('lg:col-span-8');
             render();
         }
 
@@ -558,7 +558,7 @@
             return `${baseUrl}#${encoded}`;
         }
 
-        // Share to Twitter/X with user's specific text format
+       // Share to Twitter/X with user's specific text format
         async function shareToTwitter() {
             const btn = document.getElementById('share-twitter-btn');
             const originalHTML = btn.innerHTML;
@@ -965,6 +965,8 @@
                 const endAge = item.endYear - state.birthYear;
                 const ageSpan = item.endYear === CURRENT_YEAR ? `${startAge}歳〜現在` : `${startAge}〜${endAge}歳`;
 
+                const paletteObj = COLOR_PALETTE.find(c => c.hex.toLowerCase() === item.color.toLowerCase()) || { text: '#ffffff' };
+
                 card.innerHTML = `
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
@@ -1002,7 +1004,7 @@
             mainGrid.className = 'grid relative w-full select-none';
             mainGrid.style.gridTemplateColumns = `repeat(${totalYears}, minmax(0, 1fr))`;
 
-            // 1. Header Cells (4-digit year or age)
+            // 1. Header Cells (4-digit year or age without sublabel)
             for (let y = startY; y <= endY; y++) {
                 const cell = document.createElement('div');
                 cell.className = 'px-1 py-1 text-center border-b border-slate-300/50 flex items-center justify-center font-extrabold text-slate-700 bg-white/30 backdrop-blur-sm z-20';
@@ -1059,7 +1061,7 @@
                 const isOngoing = item.endYear === CURRENT_YEAR;
                 
                 bar.innerHTML = `
-                    <span class="truncate font-extrabold flex items-center gap-1 timeline-bar-title">
+                    <span class="truncate font-extrabold flex items-center gap-1 leading-normal my-auto timeline-bar-text">
                         <span>${escapeHtml(item.title)}</span>
                     </span>
                     ${isOngoing ? '<span class="text-[10px] flex-shrink-0 bg-white/20 backdrop-blur-sm px-1.5 py-0.5 rounded-full ml-1">🔥 現在</span>' : ''}
@@ -1086,7 +1088,7 @@
             });
         }
 
-        // Export Timeline as PNG Image (Full grid width expansion & font rendering fix)
+        // Export Timeline as PNG Image (Full grid width expansion)
         async function exportImage() {
             const btn = document.getElementById('export-btn');
             const target = document.getElementById('timeline-canvas');
@@ -1096,15 +1098,17 @@
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>画像生成中...</span>`;
 
+            // Wait for fonts to be completely ready
+            if (document.fonts) {
+                await document.fonts.ready;
+            }
+
             const prevScrollLeft = scrollWrapper ? scrollWrapper.scrollLeft : 0;
             const prevOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
             const prevWidth = target.style.width;
 
             try {
-                // Ensure fonts are loaded before capture
-                if (document.fonts && document.fonts.ready) {
-                    await document.fonts.ready;
-                }
+                target.classList.add('exporting-canvas');
 
                 if (scrollWrapper) {
                     scrollWrapper.scrollLeft = 0;
@@ -1127,7 +1131,12 @@
                     onclone: (clonedDoc) => {
                         const clonedTarget = clonedDoc.getElementById('timeline-canvas');
                         if (clonedTarget) {
-                            clonedTarget.style.fontFamily = '"M PLUS Rounded 1c", sans-serif';
+                            clonedTarget.querySelectorAll('*').forEach(el => {
+                                const computedStyle = window.getComputedStyle(el);
+                                if (computedStyle.fontFamily.includes('M PLUS Rounded 1c')) {
+                                    el.style.fontFamily = '"M PLUS Rounded 1c", sans-serif';
+                                }
+                            });
                         }
                     }
                 });
@@ -1140,6 +1149,7 @@
                 console.error('Export error:', err);
                 alert('画像の出力中にエラーが発生しました。');
             } finally {
+                target.classList.remove('exporting-canvas');
                 target.style.width = prevWidth || '';
                 if (scrollWrapper) {
                     scrollWrapper.style.overflow = prevOverflow || '';
