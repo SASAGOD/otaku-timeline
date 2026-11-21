@@ -344,6 +344,7 @@
         ];
 
         const CURRENT_YEAR = 2026;
+        const STORAGE_KEY = 'otaku_timeline_data_v1';
 
         // Application State (Restored Default Item: 自分)
         let state = {
@@ -364,8 +365,38 @@
             ]
         };
 
+        // Load saved state from LocalStorage if available
+        function loadSavedState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && typeof parsed === 'object') {
+                        state = { ...state, ...parsed };
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to load saved state from localStorage:', e);
+            }
+        }
+
+        // Save current state to LocalStorage
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.warn('Failed to save state to localStorage:', e);
+            }
+        }
+
         // Initialize App
         window.addEventListener('DOMContentLoaded', () => {
+            loadSavedState();
+            
+            // Sync UI inputs with loaded state
+            document.getElementById('timeline-title-input').value = state.title;
+            document.getElementById('scale-mode-select').value = state.scaleMode;
+
             initBirthYearSelect();
             initThemeButtons();
             initColorPalette();
@@ -649,6 +680,7 @@
             applyTheme();
             renderItemsList();
             renderCanvasGrid();
+            saveState(); // Automatically persist to LocalStorage on every update
         }
 
         // Render Management Sidebar List
@@ -816,21 +848,38 @@
         async function exportImage() {
             const btn = document.getElementById('export-btn');
             const target = document.getElementById('timeline-canvas');
+            const scrollWrapper = target.querySelector('.overflow-x-auto');
+            const gridContainer = document.getElementById('timeline-grid-container');
 
             btn.disabled = true;
             btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>画像生成中...</span>`;
 
+            // Save original scroll styles
+            const prevScrollLeft = scrollWrapper ? scrollWrapper.scrollLeft : 0;
+            const prevOverflow = scrollWrapper ? scrollWrapper.style.overflow : '';
+            const prevWidth = target.style.width;
+
             try {
-                // Temporary force full scroll width expansion for full snapshot
-                const scrollWrapper = target.parentElement;
-                const originalScrollLeft = scrollWrapper.scrollLeft;
+                // Ensure scroll is at zero before capture
+                if (scrollWrapper) {
+                    scrollWrapper.scrollLeft = 0;
+                    scrollWrapper.style.overflow = 'visible';
+                }
+
+                // Temporary expand full target to fit grid width completely
+                const fullGridWidth = gridContainer ? gridContainer.scrollWidth : target.scrollWidth;
+                const paddedWidth = fullGridWidth + 64; // account for canvas padding (p-8 = 32px each side)
+                target.style.width = `${paddedWidth}px`;
 
                 const canvas = await html2canvas(target, {
                     scale: 2,
                     useCORS: true,
                     backgroundColor: null,
                     logging: false,
-                    windowWidth: target.scrollWidth + 100
+                    scrollX: 0,
+                    scrollY: 0,
+                    width: paddedWidth,
+                    windowWidth: paddedWidth + 100
                 });
 
                 const link = document.createElement('a');
@@ -841,6 +890,13 @@
                 console.error('Export error:', err);
                 alert('画像の出力中にエラーが発生しました。');
             } finally {
+                // Restore original styles & scroll position
+                target.style.width = prevWidth || '';
+                if (scrollWrapper) {
+                    scrollWrapper.style.overflow = prevOverflow || '';
+                    scrollWrapper.scrollLeft = prevScrollLeft;
+                }
+
                 btn.disabled = false;
                 btn.innerHTML = `<i class="fa-solid fa-download"></i> <span>画像として保存 (.PNG)</span>`;
             }
