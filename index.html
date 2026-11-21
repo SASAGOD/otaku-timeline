@@ -103,14 +103,16 @@
 
         /* Explicit font height & baseline alignment for clean canvas exports */
         .timeline-title-text {
-            display: inline-block;
-            line-height: 1.4 !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            line-height: 1 !important;
             vertical-align: middle;
             font-size: 13px;
             font-weight: 800;
             white-space: nowrap;
             overflow: visible;
-            padding: 2px 0;
         }
     </style>
 </head>
@@ -1024,7 +1026,7 @@
                 card.innerHTML = `
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
-                            <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${item.color}"></span>
+                            <span class="color-circle-dot inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${item.color}; min-width: 10px; min-height: 10px;"></span>
                             <span class="font-extrabold text-slate-800 truncate memo-card-title">${escapeHtml(item.title)}</span>
                         </div>
                         <span class="text-[10px] font-bold text-slate-400 bg-slate-100/80 px-2 py-0.5 rounded-full flex-shrink-0">${item.startYear}〜${endText} (${ageSpan})</span>
@@ -1189,12 +1191,23 @@
                             const allTexts = clonedTarget.querySelectorAll('.timeline-title-text, .memo-card-title, .memo-card-sub, h2, h3, p, span');
                             allTexts.forEach(el => {
                                 el.style.fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-                                el.style.lineHeight = '1.4';
                                 el.style.overflow = 'visible';
                                 el.style.maxHeight = 'none';
                                 el.style.height = 'auto';
                             });
                             
+                            // Perfectly center text inside timeline bars
+                            const barTexts = clonedTarget.querySelectorAll('.timeline-title-text');
+                            barTexts.forEach(bt => {
+                                bt.style.display = 'inline-flex';
+                                bt.style.alignItems = 'center';
+                                bt.style.justifyContent = 'center';
+                                bt.style.height = '100%';
+                                bt.style.lineHeight = '1';
+                                bt.style.paddingTop = '0px';
+                                bt.style.paddingBottom = '0px';
+                            });
+
                             const bars = clonedTarget.querySelectorAll('.timeline-bar');
                             bars.forEach(b => {
                                 b.style.display = 'flex';
@@ -1203,6 +1216,17 @@
                                 b.style.height = '42px';
                                 b.style.paddingTop = '0px';
                                 b.style.paddingBottom = '0px';
+                            });
+
+                            // Guarantee display of color dots in memo list
+                            const dots = clonedTarget.querySelectorAll('.color-circle-dot');
+                            dots.forEach(d => {
+                                d.style.display = 'inline-block';
+                                d.style.width = '10px';
+                                d.style.height = '10px';
+                                d.style.minWidth = '10px';
+                                d.style.minHeight = '10px';
+                                d.style.borderRadius = '50%';
                             });
                         }
                     }
