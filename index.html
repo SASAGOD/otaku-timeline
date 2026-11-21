@@ -551,7 +551,7 @@
             return `${baseUrl}#${encoded}`;
         }
 
-        // Share to Twitter/X with dynamic post text & summary
+        // Share to Twitter/X with user's specific text format
         async function shareToTwitter() {
             const btn = document.getElementById('share-twitter-btn');
             const originalHTML = btn.innerHTML;
@@ -561,14 +561,14 @@
             try {
                 const fullShareUrl = generateShareURL();
                 const shortUrl = await getShortenedURL(fullShareUrl);
-                
-                // Dynamic post text with Title, Birth Year, and registered works summary
-                const validItems = state.items.filter(i => i.id !== 'default-1');
-                const sampleNames = validItems.slice(0, 4).map(i => `「${i.title}」`).join(' ');
-                const extraCount = validItems.length > 4 ? ` ほか${validItems.length - 4}作品` : '';
-                const itemSummaryText = sampleNames ? `\n📌 履修・推し: ${sampleNames}${extraCount}` : '';
 
-                const tweetText = `【${state.title}】(${state.birthYear}年〜)\nオタク年表を作成しました！✨${itemSummaryText}\n\n👇 年表と推しメモを見る\n#オタク年表 #履修年表`;
+                // Formatted post structure:
+                // <年表名>を作成しました！
+                // 
+                // あなたの履修歴は？年表でチェック！
+                // #オタク年表ジェネレータ
+                // <リンク>
+                const tweetText = `${state.title}を作成しました！\n\nあなたの履修歴は？年表でチェック！\n#オタク年表ジェネレータ`;
                 const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shortUrl)}`;
                 
                 window.open(twitterUrl, '_blank');
