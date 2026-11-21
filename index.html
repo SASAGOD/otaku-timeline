@@ -335,8 +335,8 @@
                 </div>
             </div>
 
-            <!-- Action Buttons (Placed right below the Timeline Preview Card) -->
-            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-center md:justify-end gap-3">
+            <!-- Action Buttons (Hidden when in Shared View mode) -->
+            <div id="action-buttons-area" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-wrap items-center justify-center md:justify-end gap-3">
                 <button id="share-twitter-btn" onclick="shareToTwitter()" class="flex-1 sm:flex-none bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-sm transition-all flex items-center justify-center gap-2">
                     <i class="fa-brands fa-x-twitter text-base"></i>
                     <span>Xでシェア</span>
@@ -468,11 +468,16 @@
             document.getElementById('shared-view-banner').classList.remove('hidden');
             const editorSidebar = document.getElementById('editor-sidebar');
             const previewSection = document.getElementById('preview-section');
+            const actionButtonsArea = document.getElementById('action-buttons-area');
             
-            // Hide edit form sidebar in shared view by default and make timeline full width
-            editorSidebar.classList.add('hidden');
-            previewSection.classList.remove('lg:col-span-8');
-            previewSection.classList.add('lg:col-span-12');
+            // Hide edit form sidebar and creator action buttons in shared view by default
+            if (editorSidebar) editorSidebar.classList.add('hidden');
+            if (actionButtonsArea) actionButtonsArea.classList.add('hidden');
+
+            if (previewSection) {
+                previewSection.classList.remove('lg:col-span-8');
+                previewSection.classList.add('lg:col-span-12');
+            }
         }
 
         // Switch from Shared View to Editing Mode
@@ -481,10 +486,15 @@
             document.getElementById('shared-view-banner').classList.add('hidden');
             const editorSidebar = document.getElementById('editor-sidebar');
             const previewSection = document.getElementById('preview-section');
+            const actionButtonsArea = document.getElementById('action-buttons-area');
             
-            editorSidebar.classList.remove('hidden');
-            previewSection.classList.remove('lg:col-span-12');
-            previewSection.classList.add('lg:col-span-8');
+            if (editorSidebar) editorSidebar.classList.remove('hidden');
+            if (actionButtonsArea) actionButtonsArea.classList.remove('hidden');
+
+            if (previewSection) {
+                previewSection.classList.remove('lg:col-span-12');
+                previewSection.classList.add('lg:col-span-8');
+            }
             render();
         }
 
@@ -949,8 +959,6 @@
                 const endAge = item.endYear - state.birthYear;
                 const ageSpan = item.endYear === CURRENT_YEAR ? `${startAge}歳〜現在` : `${startAge}〜${endAge}歳`;
 
-                const paletteObj = COLOR_PALETTE.find(c => c.hex.toLowerCase() === item.color.toLowerCase()) || { text: '#ffffff' };
-
                 card.innerHTML = `
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
@@ -988,7 +996,7 @@
             mainGrid.className = 'grid relative w-full select-none';
             mainGrid.style.gridTemplateColumns = `repeat(${totalYears}, minmax(0, 1fr))`;
 
-            // 1. Header Cells (4-digit year or age without sublabel)
+            // 1. Header Cells (4-digit year or age)
             for (let y = startY; y <= endY; y++) {
                 const cell = document.createElement('div');
                 cell.className = 'px-1 py-1 text-center border-b border-slate-300/50 flex items-center justify-center font-extrabold text-slate-700 bg-white/30 backdrop-blur-sm z-20';
