@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -372,7 +373,13 @@
                 if (saved) {
                     const parsed = JSON.parse(saved);
                     if (parsed && typeof parsed === 'object') {
-                        state = { ...state, ...parsed };
+                        // Merge loaded items safely
+                        if (Array.isArray(parsed.items)) state.items = parsed.items;
+                        if (parsed.title) state.title = parsed.title;
+                        if (parsed.birthYear) state.birthYear = parseInt(parsed.birthYear);
+                        if (parsed.scaleMode) state.scaleMode = parsed.scaleMode;
+                        if (parsed.selectedTheme) state.selectedTheme = parsed.selectedTheme;
+                        if (parsed.selectedColor) state.selectedColor = parsed.selectedColor;
                     }
                 }
             } catch (e) {
@@ -400,7 +407,7 @@
             initBirthYearSelect();
             initThemeButtons();
             initColorPalette();
-            updateYearOptions(true);
+            updateYearOptions(false);
             
             document.getElementById('canvas-footer-date').innerText = new Date().toLocaleDateString('ja-JP');
             render();
@@ -904,3 +911,4 @@
     </script>
 </body>
 </html>
+```
