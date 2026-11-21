@@ -7,12 +7,12 @@
     
     <!-- Dynamic OGP & Twitter Card Meta Tags for Link Preview Thumbnail -->
     <meta property="og:title" id="og-title" content="わたしのオタク年表">
-    <meta property="og:description" id="og-desc" content="オタク年表を作成しました！あなたの履修歴は？年表でチェック！">
+    <meta property="og:description" id="og-desc" content="オタク年表を作成しました！あなたの歴は？年表でチェック！">
     <meta property="og:type" content="website">
     <meta property="og:image" id="og-image" content="https://sasagod.github.io/otaku-timeline/ogp-image.png">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" id="tw-title" content="わたしのオタク年表">
-    <meta name="twitter:description" id="tw-desc" content="オタク年表を作成しました！あなたの履修歴は？年表でチェック！">
+    <meta name="twitter:description" id="tw-desc" content="オタク年表を作成しました！あなたの歴は？年表でチェック！">
     <meta name="twitter:image" id="tw-image" content="https://sasagod.github.io/otaku-timeline/ogp-image.png">
 
     <!-- Tailwind CSS -->
@@ -326,7 +326,7 @@
                     <div id="shared-memo-list-section" class="mt-6 pt-5 border-t border-slate-200/50">
                         <h3 class="font-bold text-sm text-slate-700 mb-3 flex items-center gap-1.5">
                             <i class="fa-solid fa-bookmark text-purple-500 text-xs"></i>
-                            履修コンテンツ＆推しメモ一覧
+                            コンテンツ＆推しメモ一覧
                         </h3>
                         <div id="shared-memo-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
                             <!-- Populated dynamically -->
@@ -554,7 +554,7 @@
             return `${baseUrl}#${encoded}`;
         }
 
-        // Share to Twitter/X with user-requested format
+        // Share to Twitter/X with user's specific text format
         async function shareToTwitter() {
             const btn = document.getElementById('share-twitter-btn');
             const originalHTML = btn.innerHTML;
@@ -565,8 +565,12 @@
                 const fullShareUrl = generateShareURL();
                 const shortUrl = await getShortenedURL(fullShareUrl);
 
-                // Formatted tweet text
-                const tweetText = `${state.title}を作成しました！\n\nあなたの履修歴は？年表でチェック！\n#オタク年表ジェネレータ`;
+                // Formatted post structure:【<年表名>】を作成しました！
+                // 
+                // あなたの履修歴は？年表でチェック！
+                // #オタク年表ジェネレータ
+                // <リンク>
+                const tweetText = `【${state.title}】を作成しました！\n\nあなたの履修歴は？年表でチェック！\n#オタク年表ジェネレータ`;
                 const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shortUrl)}`;
                 
                 window.open(twitterUrl, '_blank');
