@@ -539,7 +539,9 @@
                 const res = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
                 if (res.ok) {
                     const shortUrl = await res.text();
-                    return shortUrl.trim();
+                    if (shortUrl && shortUrl.startsWith('http')) {
+                        return shortUrl.trim();
+                    }
                 }
             } catch (e) {
                 console.warn('TinyURL shortening failed, using original long URL:', e);
@@ -547,15 +549,24 @@
             return longUrl;
         }
 
-        // Generate Shareable URL
+        // Generate Shareable URL (Optimized & Compacted payload)
         function generateShareURL() {
+            // Compress key names to keep base64 strings extremely short
+            const compactItems = state.items.map(i => ({
+                t: i.title,
+                m: i.memo || '',
+                s: i.startYear,
+                e: i.endYear,
+                c: i.color
+            }));
+
             const copyState = {
-                title: state.title,
-                birthYear: state.birthYear,
-                scaleMode: state.scaleMode,
-                selectedTheme: state.selectedTheme,
-                selectedColor: state.selectedColor,
-                items: state.items
+                t: state.title,
+                b: state.birthYear,
+                sm: state.scaleMode,
+                th: state.selectedTheme,
+                cl: state.selectedColor,
+                i: compactItems
             };
             const jsonStr = JSON.stringify(copyState);
             const encoded = btoa(encodeURIComponent(jsonStr));
@@ -563,16 +574,52 @@
             return `${baseUrl}#${encoded}`;
         }
 
-        // Share to Twitter/X with user-requested format
+        // Load state from URL hash if available (Supports both compact & legacy format)
+        function loadStateFromURL() {
+            try {
+                const hash = window.location.hash.substring(1);
+                if (hash) {
+                    const jsonStr = decodeURIComponent(atob(hash));
+                    const parsed = JSON.parse(jsonStr);
+                    if (parsed && typeof parsed === 'object') {
+                        // Compact format support
+                        if (parsed.i && Array.isArray(parsed.i)) {
+                            state.items = parsed.i.map((item, idx) => ({
+                                id: `item-shared-${idx}`,
+                                title: item.t,
+                                memo: item.m || '',
+                                startYear: item.s,
+                                endYear: item.e,
+                                color: item.c
+                            }));
+                        } else if (Array.isArray(parsed.items)) {
+                            state.items = parsed.items;
+                        }
+
+                        state.title = parsed.t || parsed.title || state.title;
+                        state.birthYear = parseInt(parsed.b || parsed.birthYear || state.birthYear);
+                        state.scaleMode = parsed.sm || parsed.scaleMode || state.scaleMode;
+                        state.selectedTheme = parsed.th || parsed.selectedTheme || state.selectedTheme;
+                        state.selectedColor = parsed.cl || parsed.selectedColor || state.selectedColor;
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to parse state from URL:', e);
+            }
+            return false;
+        }
+
         // Share to Twitter/X with user-requested format (PC & Mobile compatible)
         async function shareToTwitter() {
             const btn = document.getElementById('share-twitter-btn');
             const originalHTML = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>共有準備中...</span>`;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>URL短縮中...</span>`;
 
             try {
                 const fullShareUrl = generateShareURL();
+                // Ensure shortening finishes before opening X post screen
                 const shortUrl = await getShortenedURL(fullShareUrl);
 
                 // Exact user-requested tweet format
