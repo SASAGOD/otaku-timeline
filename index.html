@@ -71,17 +71,6 @@
             background: rgba(100, 116, 139, 0.7);
         }
 
-        /* Fix html2canvas font vertical shift / clipping bug */
-        .exporting-canvas * {
-            line-height: normal !important;
-            letter-spacing: normal !important;
-        }
-        .exporting-canvas .timeline-bar-text {
-            display: inline-block !important;
-            padding-top: 2px !important;
-            line-height: 1.2 !important;
-        }
-
         /* Color preview selection active ring */
         .color-dot.selected {
             transform: scale(1.2);
@@ -106,6 +95,13 @@
         .timeline-bar:hover {
             transform: translateY(-1px);
             box-shadow: 0 4px 12px -1px rgba(0, 0, 0, 0.18);
+        }
+
+        /* Explicit font height styling for clean canvas exports */
+        .timeline-title-text {
+            display: block;
+            line-height: 1.25;
+            padding-bottom: 2px;
         }
     </style>
 </head>
@@ -558,7 +554,7 @@
             return `${baseUrl}#${encoded}`;
         }
 
-       // Share to Twitter/X with user's specific text format
+        // Share to Twitter/X with user-requested format
         async function shareToTwitter() {
             const btn = document.getElementById('share-twitter-btn');
             const originalHTML = btn.innerHTML;
@@ -569,12 +565,8 @@
                 const fullShareUrl = generateShareURL();
                 const shortUrl = await getShortenedURL(fullShareUrl);
 
-                // Formatted post structure:【<年表名>】を作成しました！
-                // 
-                // あなたの履修歴は？年表でチェック！
-                // #オタク年表ジェネレータ
-                // <リンク>
-                const tweetText = `【${state.title}】を作成しました！\n\nあなたの履修歴は？年表でチェック！\n#オタク年表ジェネレータ`;
+                // Formatted tweet text
+                const tweetText = `${state.title}を作成しました！\n\nあなたの履修歴は？年表でチェック！\n#オタク年表ジェネレータ`;
                 const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(shortUrl)}`;
                 
                 window.open(twitterUrl, '_blank');
@@ -958,7 +950,7 @@
 
             itemsToDisplay.forEach(item => {
                 const card = document.createElement('div');
-                card.className = 'p-3 bg-white/60 backdrop-blur-sm rounded-xl border border-slate-200/60 shadow-sm flex flex-col justify-between gap-1';
+                card.className = 'memo-card p-3 bg-white/60 backdrop-blur-sm rounded-xl border border-slate-200/60 shadow-sm flex flex-col justify-between gap-1';
                 
                 const endText = item.endYear === CURRENT_YEAR ? '現在' : `${item.endYear}年`;
                 const startAge = item.startYear - state.birthYear;
@@ -971,11 +963,11 @@
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 min-w-0">
                             <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${item.color}"></span>
-                            <span class="font-extrabold text-slate-800 truncate">${escapeHtml(item.title)}</span>
+                            <span class="font-extrabold text-slate-800 truncate memo-card-title">${escapeHtml(item.title)}</span>
                         </div>
                         <span class="text-[10px] font-bold text-slate-400 bg-slate-100/80 px-2 py-0.5 rounded-full flex-shrink-0">${item.startYear}〜${endText} (${ageSpan})</span>
                     </div>
-                    ${item.memo ? `<p class="text-[11px] text-slate-600 pl-4 border-l-2 border-purple-300/80 mt-1 italic">${escapeHtml(item.memo)}</p>` : ''}
+                    ${item.memo ? `<p class="text-[11px] text-slate-600 pl-4 border-l-2 border-purple-300/80 mt-1 italic memo-card-sub">${escapeHtml(item.memo)}</p>` : ''}
                 `;
                 gridEl.appendChild(card);
             });
@@ -1061,10 +1053,10 @@
                 const isOngoing = item.endYear === CURRENT_YEAR;
                 
                 bar.innerHTML = `
-                    <span class="truncate font-extrabold flex items-center gap-1 leading-normal my-auto timeline-bar-text">
-                        <span>${escapeHtml(item.title)}</span>
+                    <span class="timeline-title-text font-extrabold truncate">
+                        ${escapeHtml(item.title)}
                     </span>
-                    ${isOngoing ? '<span class="text-[10px] flex-shrink-0 bg-white/20 backdrop-blur-sm px-1.5 py-0.5 rounded-full ml-1">🔥 現在</span>' : ''}
+                    ${isOngoing ? '<span class="text-[10px] flex-shrink-0 bg-white/20 backdrop-blur-sm px-1.5 py-0.5 rounded-full ml-1 font-bold">🔥 現在</span>' : ''}
                 `;
 
                 bar.onclick = () => editItem(item.id);
@@ -1088,7 +1080,7 @@
             });
         }
 
-        // Export Timeline as PNG Image (Full grid width expansion)
+        // Export Timeline as PNG Image (Full grid width expansion + Font-rendering fix)
         async function exportImage() {
             const btn = document.getElementById('export-btn');
             const target = document.getElementById('timeline-canvas');
@@ -1108,8 +1100,6 @@
             const prevWidth = target.style.width;
 
             try {
-                target.classList.add('exporting-canvas');
-
                 if (scrollWrapper) {
                     scrollWrapper.scrollLeft = 0;
                     scrollWrapper.style.overflow = 'visible';
@@ -1129,13 +1119,15 @@
                     width: paddedWidth,
                     windowWidth: paddedWidth + 100,
                     onclone: (clonedDoc) => {
+                        // Apply robust font-rendering fixes inside the cloned capture DOM
                         const clonedTarget = clonedDoc.getElementById('timeline-canvas');
                         if (clonedTarget) {
-                            clonedTarget.querySelectorAll('*').forEach(el => {
-                                const computedStyle = window.getComputedStyle(el);
-                                if (computedStyle.fontFamily.includes('M PLUS Rounded 1c')) {
-                                    el.style.fontFamily = '"M PLUS Rounded 1c", sans-serif';
-                                }
+                            // Ensure standard fallback font and explicit line-heights on cloned DOM
+                            const allTexts = clonedTarget.querySelectorAll('.timeline-title-text, .memo-card-title, .memo-card-sub, h2, h3, span, p');
+                            allTexts.forEach(el => {
+                                el.style.fontFamily = 'sans-serif, "M PLUS Rounded 1c"';
+                                el.style.lineHeight = '1.3';
+                                el.style.transform = 'none';
                             });
                         }
                     }
@@ -1149,7 +1141,6 @@
                 console.error('Export error:', err);
                 alert('画像の出力中にエラーが発生しました。');
             } finally {
-                target.classList.remove('exporting-canvas');
                 target.style.width = prevWidth || '';
                 if (scrollWrapper) {
                     scrollWrapper.style.overflow = prevOverflow || '';
