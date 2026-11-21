@@ -1051,12 +1051,10 @@
                 bar.style.color = paletteObj.text;
 
                 const isOngoing = item.endYear === CURRENT_YEAR;
-                const memoText = item.memo ? ` (${escapeHtml(item.memo)})` : '';
                 
                 bar.innerHTML = `
                     <span class="truncate font-extrabold flex items-center gap-1">
                         <span>${escapeHtml(item.title)}</span>
-                        <span class="font-normal opacity-90 text-[10px]">${memoText}</span>
                     </span>
                     ${isOngoing ? '<span class="text-[10px] flex-shrink-0 bg-white/20 backdrop-blur-sm px-1.5 py-0.5 rounded-full ml-1">🔥 現在</span>' : ''}
                 `;
